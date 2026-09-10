@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛠️ Plåt-offert Hjälpen</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- PWA & Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+
+<div class="container">
+    <!-- HEADER -->
+    <div class="header no-print">
+        <h1>⚙️ Plåt-<span>Offert</span> v13</h1>
+        <div class="header-info">
+            <label>Kund <input type="text" id="kundNamn" placeholder="Ange kund..." oninput="window.sparaUtkast()"></label>
+            <label>Projekt <input type="text" id="projektNamn" placeholder="Ange projekt..." oninput="window.sparaUtkast()"></label>
+            <label>Datum <input type="date" id="datumVal" onchange="window.sparaUtkast()"></label>
+            <label>Material
+                <select id="materialVal" onchange="window.sparaUtkast()">
+                    <option value="Stål">Stål</option>
+                    <option value="Rostfritt">Rostfritt</option>
+                    <option value="Koppar">Koppar</option>
+                    <option value="Aluminium">Aluminium</option>
+                    <option value="Övrigt">Övrigt</option>
+                </select>
+            </label>
+            <label>Orderantal
+                <input type="number" id="orderAntal" value="1" min="1" step="1" oninput="window.uppdateraTotal()">
+            </label>
+            <label>Påslag (%)
+                <input type="number" id="paslagProcent" value="0" min="0" oninput="window.uppdateraTotal()">
+            </label>
+        </div>
+    </div>
+
+    <!-- TILLVERKNINGSMOMENT -->
+    <div class="card no-print">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <h2>📋 Tillverkningsmoment <span class="badge">Lägg till steg för steg</span></h2>
+            <span style="font-size: 12px; color: #28a745;">✓ Utkast sparas automatiskt</span>
+        </div>
+        
+        <div class="moment-lista" id="momentLista"></div>
+        
+        <div style="margin-top: 15px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;" class="no-print">
+            <button class="btn btn-primary" onclick="window.laggTillMoment()">➕ Lägg till moment</button>
+            <button class="btn btn-outline" onclick="window.rensaAllaMoment()">🗑️ Börja om</button>
+            <div style="width: 1px; height: 30px; background: #dde1e6; margin: 0 10px;"></div>
+            <button class="btn btn-outline" onclick="window.laddaNerOffert()">💾 Spara fil (JSON)</button>
+            <button class="btn btn-outline" onclick="document.getElementById('uploadOffert').click()">📂 Öppna fil (JSON)</button>
+            <input type="file" id="uploadOffert" accept=".json" style="display: none;" onchange="window.laddaUppOffert(event)">
+        </div>
+    </div>
+
+    <!-- TOTAL -->
+    <div class="card no-print">
+        <div class="total-rad">
+            <div>
+                <div style="font-size: 14px; color: #6c757d;">Självkostnad (Första order)</div>
+                <div style="font-size: 20px; font-weight: 600; color: #6c757d;"><span id="totalPris">0,00</span> kr</div>
+                <div style="font-size: 13px; color: #6c757d; margin-top: 4px;">
+                    <span id="stuckPris">0,00</span> kr/st ·
+                    <span id="antalMoment">0</span> moment
+                </div>
+                <div style="font-size: 12px; color: #4b5563; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1;">
+                    <strong>Återkommande order (exkl. fixtur/verktyg):</strong><br>
+                    <span id="totalPrisUtanFixVerk">0,00</span> kr (<span id="stuckPrisUtanFixVerk">0,00</span> kr/st)
+                </div>
+            </div>
+            <div>
+                <div style="font-size: 14px; color: #1a1a2e; font-weight: 700;">Kundpris (Inkl. <span id="displayPaslag">0</span>% påslag)</div>
+                <div class="total-pris"><span id="kundPris">0,00</span> kr</div>
+                <div style="font-size: 13px; color: #1a1a2e; margin-top: 4px; font-weight: 600;">
+                    <span id="kundStuckPris">0,00</span> kr/st
+                </div>
+                <div style="font-size: 12px; color: #1e293b; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; font-weight: 600;">
+                    <strong>Återkommande order (exkl. fixtur/verktyg):</strong><br>
+                    <span id="kundPrisUtanFixVerk">0,00</span> kr (<span id="kundStuckPrisUtanFixVerk">0,00</span> kr/st)
+                </div>
+            </div>
+            <div class="action-knappar">
+                <button class="btn btn-success" onclick="window.visaSammanstallning()">📄 Skapa sammanställning</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAMMANSTÄLLNING -->
+    <div class="sammanstallning" id="sammanstallningPanel">
+        <div class="sammanstallning-header-print">
+            <h2>📄 Offertsammanställning</h2>
+        </div>
+        <div id="sammanstallningInnehall"></div>
+        <div style="display: flex; gap: 12px; margin-top: 15px;" class="no-print">
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Skriv ut</button>
+            <button class="btn btn-success" onclick="window.kopieraTillExcel()">📋 Kopiera till Excel</button>
+            <button class="btn btn-outline" onclick="window.stangSammanstallning()">✖️ Stäng</button>
+        </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="card no-print">
+        <div class="admin-toggle">
+            <button class="btn btn-warning" onclick="window.toggleAdmin()">⚙️ Hantera maskiner, verktyg & material</button>
+        </div>
+        <div class="admin-panel" id="adminPanel">
+            <h3>Hantera poster</h3>
+            <p style="font-size:13px; color:#6c757d;">
+                <span class="info-tip" title="Fältet 'Mätmaskin' påverkar om 'Antal/Op' visas som 'Mätintervall'.">ℹ️</span>
+                Kryssa i "Mätmaskin" för att ändra etikett till "Mätintervall".
+            </p>
+            <br>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:25%;">Namn</th>
+                            <th style="width:15%;">Typ</th>
+                            <th style="width:15%;">Timpris (kr)</th>
+                            <th style="width:15%;">Mätmaskin</th>
+                            <th style="width:15%;">Åtgärd</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTabellBody"></tbody>
+                </table>
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-primary btn-sm" onclick="window.laggTillResursAdmin()">➕ Lägg till</button>
+                <button class="btn btn-success btn-sm" onclick="window.sparaMaskinData()">💾 Spara resurser</button>
+                <button class="btn btn-outline btn-sm" onclick="window.laddaStandardMaskiner()">↩️ Återställ standard</button>
+                <button class="btn btn-warning btn-sm" onclick="window.uppdateraTimprisPaaAllaRader()">🔄 Uppdatera timpris på alla rader</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => console.log('Service Worker registrerad:', reg.scope))
+        .catch((err) => console.error('Service Worker-fel:', err));
+    });
+  }
+</script>
+
+</body>
+</html>
